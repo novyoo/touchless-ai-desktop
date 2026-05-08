@@ -216,3 +216,33 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Virtual environment
+.venv/
+venv/
+
+# Application log
+touchless.log
+
+# PyInstaller build output
+dist/
+build/
+*.spec
+
+# User-specific config overrides
+config_user.yaml
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# VS Code settings
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db

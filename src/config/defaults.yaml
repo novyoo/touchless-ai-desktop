@@ -1,0 +1,58 @@
+# Master configuration for Touchless AI Desktop
+# Every value here can be overridden by user settings
+
+camera:
+  device_id: 0          # 0 = default webcam. 1, 2.. for external webcams
+  width: 1280           # Capture width in pixels. Higher = more accurate but slower
+  height: 720           # Capture height in pixels
+  fps: 30               # Target FPS for webcam capture
+
+mediapipe:
+  max_num_hands: 1               # Track 1 hand only. 2 allows both hands but doubles CPU cost
+  min_detection_confidence: 0.7  # How confident before "hand found". 0.0-1.0. Lower = more false positives
+  min_tracking_confidence: 0.5   # Confidence to keep tracking once found. Lower = more jitter
+
+cursor:
+  smoothing_factor: 0.7     # 0.0 = no smoothing (jittery), 1.0 = totally frozen. 0.7 is balanced
+  acceleration: 1.5         # Multiplier for fast movements. Higher = cursor flies across screen
+  stabilization_radius: 8   # Pixels. If cursor moves less than this, hold it still (deadzone)
+  edge_acceleration: 2.0    # Extra speed boost near screen edges for easy corner access
+  precision_mode_factor: 0.3 # Speed multiplier in precision mode (peace sign gesture)
+
+gestures:
+  click_threshold: 0.04       # Distance between fingertips to trigger click. Lower = easier to click by accident
+  hold_duration: 0.6          # Seconds to hold pinch before drag starts
+  scroll_sensitivity: 3       # Pixels scrolled per finger-movement unit. Higher = faster scroll
+  fist_pause_duration: 1.5    # Seconds to hold fist before pausing tracking
+  confidence_threshold: 0.75  # Minimum gesture confidence to act. Prevents false triggers
+
+voice:
+  activation_gesture: "open_palm"   # Which gesture triggers the microphone
+  activation_hold: 1.0              # Seconds to hold gesture before mic activates
+  listen_timeout: 5.0               # Seconds to listen before giving up
+  confidence_threshold: 0.6         # Vosk confidence threshold. Lower = accepts more uncertain words
+  max_phrase_time: 3.0              # Max seconds for a single voice command
+
+overlay:
+  opacity: 0.92               # 0.0 = invisible, 1.0 = solid
+  hud_position: "top-right"   # Options: top-left, top-right, bottom-left, bottom-right
+  aurora_trail_length: 20     # How many cursor positions to remember for the trail
+  aurora_trail_width: 4       # Trail line thickness in pixels
+  show_hand_skeleton: true    # Draw the hand bones on screen
+  show_fps: true
+  show_gesture_name: true
+  show_confidence: true
+
+security:
+  activation_zone_enabled: false   # If true, gestures only work inside a defined screen region
+  activation_zone:
+    x: 0.0    # Top-left X as fraction of screen width (0.0 to 1.0)
+    y: 0.0    # Top-left Y as fraction of screen height
+    w: 1.0    # Zone width as fraction of screen width
+    h: 1.0    # Zone height as fraction of screen height
+  require_presence: true    # Pause when no face/person detected
+  auto_pause_timeout: 30    # Seconds of inactivity before auto-pausing
+
+performance:
+  frame_skip: 0         # Process every Nth frame. 0 = every frame. 1 = every other frame (saves CPU)
+  mediapipe_complexity: 1   # 0 = fastest/least accurate, 1 = balanced, 2 = slowest/most accurate
