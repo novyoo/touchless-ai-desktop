@@ -11,6 +11,7 @@ import time
 import logging
 import sys
 import os
+from src.vision.gesture_classifier import GestureClassifier, Gesture
 
 # Add project root to Python path so we can import src.*
 # WHY? When you run `python src/vision/debug_runner.py`, Python's path starts
@@ -54,6 +55,9 @@ def run_vision_debug():
     
     smoother = IndexTipSmoother(min_cutoff=1.0, beta=0.007)
     fps_counter = FPSCounter(window=30)
+
+    classifier = GestureClassifier(config)
+    classifier.start()
     
     # Start components
     if not cap.start():
@@ -90,6 +94,9 @@ def run_vision_debug():
                 # (Full landmark smoothing added in Phase 2 when we need it)
             else:
                 smoother.reset()  # Reset when hand disappears
+
+            # Classify gesture
+            gesture_result = classifier.process(hand_data)
             
             fps_counter.tick()
             
@@ -101,7 +108,7 @@ def run_vision_debug():
                 display = tracker.draw_landmarks(display, hand_data)
             
             if show_debug:
-                _draw_debug_overlay(display, hand_data, fps_counter, t_track)
+                _draw_debug_overlay(display, hand_data, fps_counter, t_track, gesture_result)
             
             # Show window 
             cv2.imshow("Touchless AI — Vision Engine Debug [Q=quit]", display)
@@ -127,54 +134,56 @@ def run_vision_debug():
         log.info("Vision Engine debug stopped cleanly")
 
 
-def _draw_debug_overlay(frame: object, hand_data, fps_counter, latency_ms: float):
-    """
-    Draw the debug HUD onto the frame.
-    
-    This shows all the raw metrics — exactly what the Explainability HUD
-    will show in the final overlay.
-    """
+def _draw_debug_overlay(frame, hand_data, fps_counter, latency_ms, gesture_result=None):
+    """Draw the debug HUD with full gesture info."""
     h, w = frame.shape[:2]
     
-    # Background panel 
-    # Draw a semi-transparent dark rectangle so text is readable
     overlay = frame.copy()
-    cv2.rectangle(overlay, (0, 0), (300, 200), (0, 0, 0), -1)
-    # Blend: alpha=0.6 means 60% overlay + 40% original frame = semi-transparent
+    cv2.rectangle(overlay, (0, 0), (320, 240), (0, 0, 0), -1)
     cv2.addWeighted(overlay, 0.6, frame, 0.4, 0, frame)
     
-    # Helper: draw text with outline 
     def put_text(text, y, color=(255, 255, 255)):
-        # Draw black outline first (for contrast on any background)
-        cv2.putText(frame, text, (12, y), cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0,0,0), 2)
-        # Then draw white text on top
-        cv2.putText(frame, text, (12, y), cv2.FONT_HERSHEY_SIMPLEX, 0.55, color, 1)
+        cv2.putText(frame, text, (12, y), cv2.FONT_HERSHEY_SIMPLEX, 0.52, (0,0,0), 2)
+        cv2.putText(frame, text, (12, y), cv2.FONT_HERSHEY_SIMPLEX, 0.52, color, 1)
     
-    # Metrics 
-    status_color = (0, 255, 100) if hand_data.hand_detected else (100, 100, 255)
-    
-    put_text(f"FPS: {fps_counter.fps:.1f}", 28, (0, 255, 200))
-    put_text(f"Latency: {latency_ms:.1f}ms", 52)
+    put_text(f"FPS: {fps_counter.fps:.1f}   Latency: {latency_ms:.1f}ms", 26, (0, 255, 200))
     
     if hand_data.hand_detected:
         ix, iy = hand_data.index_tip_norm
-        put_text(f"Hand: {hand_data.handedness} ({hand_data.detection_confidence:.2f})", 76, (0, 255, 100))
-        put_text(f"Index tip: ({ix:.3f}, {iy:.3f})", 100)
-        put_text(f"Index px: {hand_data.index_tip_px}", 124)
-        put_text(f"Landmarks: 21 detected", 148, (200, 200, 200))
+        put_text(f"Hand: {hand_data.handedness} (conf {hand_data.detection_confidence:.2f})", 52, (0, 255, 100))
+        put_text(f"Index: ({ix:.3f}, {iy:.3f})", 76)
+        
+        if gesture_result:
+            gname = gesture_result.gesture.name
+            gconf = gesture_result.confidence
+            gstate = gesture_result.state.name
+            
+            # Gesture color: green = active, yellow = holding, white = idle
+            gcol = (0,255,100) if gesture_result.state.name == 'ACTIVE' else \
+                   (0,220,255) if gesture_result.state.name == 'HOLDING' else (200,200,200)
+            
+            put_text(f"Gesture: {gname}", 104, gcol)
+            put_text(f"Conf: {gconf:.2f}  State: {gstate}", 128, gcol)
+            
+            if gesture_result.hold_duration > 0:
+                put_text(f"Hold: {gesture_result.hold_duration:.2f}s", 152)
+            
+            # Finger state indicators
+            fs = gesture_result.finger_states
+            finger_str = ""
+            for fname, key in [("I", "index"), ("M", "middle"), ("R", "ring"), ("P", "pinky"), ("T", "thumb")]:
+                finger_str += fname if fs.get(key) else "."
+            put_text(f"Fingers: {finger_str}  Pinch: {gesture_result.pinch_distance:.2f}", 176)
+            
+            if gesture_result.just_triggered:
+                put_text("*** TRIGGERED ***", 200, (0, 255, 50))
     else:
-        put_text("Hand: NOT DETECTED", 76, (100, 100, 255))
-        put_text("Show your hand to the camera", 100, (150, 150, 150))
+        put_text("Hand: NOT DETECTED", 52, (100, 100, 255))
     
-    # Corner status indicator 
-    # Big colored dot: green = tracking, blue = not detected
     dot_color = (0, 255, 100) if hand_data.hand_detected else (100, 100, 255)
     cv2.circle(frame, (w - 25, 25), 10, dot_color, -1)
-    
-    # Key hints at bottom
     cv2.putText(frame, "S=skeleton  D=debug  Q=quit",
-                (12, h - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (150, 150, 150), 1)
-
+                (12, h - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.42, (150, 150, 150), 1)
 
 if __name__ == "__main__":
     run_vision_debug()

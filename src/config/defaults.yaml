@@ -20,11 +20,12 @@ cursor:
   precision_mode_factor: 0.3 # Speed multiplier in precision mode (peace sign gesture)
 
 gestures:
-  click_threshold: 0.04       # Distance between fingertips to trigger click. Lower = easier to click by accident
-  hold_duration: 0.6          # Seconds to hold pinch before drag starts
-  scroll_sensitivity: 3       # Pixels scrolled per finger-movement unit. Higher = faster scroll
-  fist_pause_duration: 1.5    # Seconds to hold fist before pausing tracking
-  confidence_threshold: 0.75  # Minimum gesture confidence to act. Prevents false triggers
+  click_threshold: 0.28       # Normalized pinch distance to trigger click
+  hold_duration: 0.5          # Seconds to hold pinch before drag starts
+  scroll_sensitivity: 3.0     # Scroll speed multiplier
+  fist_pause_duration: 1.5    # Seconds to hold fist before pausing
+  confidence_threshold: 0.75  # Minimum confidence to fire any gesture
+  stability_frames: 4         # Consecutive frames required before firing
 
 voice:
   activation_gesture: "open_palm"   # Which gesture triggers the microphone
