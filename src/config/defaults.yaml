@@ -8,24 +8,26 @@ camera:
   fps: 30               # Target FPS for webcam capture
 
 mediapipe:
-  max_num_hands: 1               # Track 1 hand only. 2 allows both hands but doubles CPU cost
+  max_num_hands: 2               # Track 1 hand only. 2 allows both hands but doubles CPU cost
   min_detection_confidence: 0.7  # How confident before "hand found". 0.0-1.0. Lower = more false positives
   min_tracking_confidence: 0.5   # Confidence to keep tracking once found. Lower = more jitter
+  mediapipe_complexity: 1
 
 cursor:
-  smoothing_factor: 0.7     # 0.0 = no smoothing (jittery), 1.0 = totally frozen. 0.7 is balanced
-  acceleration: 1.5         # Multiplier for fast movements. Higher = cursor flies across screen
-  stabilization_radius: 8   # Pixels. If cursor moves less than this, hold it still (deadzone)
-  edge_acceleration: 2.0    # Extra speed boost near screen edges for easy corner access
-  precision_mode_factor: 0.3 # Speed multiplier in precision mode (peace sign gesture)
+  smoothing_factor: 0.65
+  dpi_scale: 2.8
+  stabilization_radius: 5
+  edge_acceleration: 1.4
+  margin: 0.04               # it was 0.10 - smaller margin = less hand movement needed
 
 gestures:
-  click_threshold: 0.28       # Normalized pinch distance to trigger click
-  hold_duration: 0.5          # Seconds to hold pinch before drag starts
-  scroll_sensitivity: 3.0     # Scroll speed multiplier
-  fist_pause_duration: 1.5    # Seconds to hold fist before pausing
-  confidence_threshold: 0.75  # Minimum confidence to fire any gesture
-  stability_frames: 4         # Consecutive frames required before firing
+  click_threshold: 0.28
+  hold_duration: 0.5
+  scroll_sensitivity: 10.0    # it was 3.0, but higher = faster scroll
+  pause_hold_duration: 2.0
+  confidence_threshold: 0.72
+  stability_frames: 4
+  scroll_hold_duration: 2.0
 
 voice:
   activation_gesture: "open_palm"   # Which gesture triggers the microphone
@@ -54,6 +56,8 @@ security:
   require_presence: true    # Pause when no face/person detected
   auto_pause_timeout: 30    # Seconds of inactivity before auto-pausing
 
-performance:
-  frame_skip: 0         # Process every Nth frame. 0 = every frame. 1 = every other frame (saves CPU)
-  mediapipe_complexity: 1   # 0 = fastest/least accurate, 1 = balanced, 2 = slowest/most accurate
+assets:
+  font_path: "assets/fonts/hud_font.ttf"   # Change to your font filename
+  cursor_png: "assets/cursors/cursor.png"   # Change to your cursor filename
+  use_custom_font: false    # Set to true once you've added a font
+  use_custom_cursor: false  # Set to true once you've added a cursor png
